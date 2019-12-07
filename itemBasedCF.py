@@ -15,7 +15,7 @@ def get_recommendations(trainfilename, predictfilename):
     for index in range(len(user_item_list)):
         user = user_item_list[index][0]
         item = user_item_list[index][1]
-        result.append(predict(item, user, data, W, 5))
+        result.append(predict(item, user, data, W, 200))
     end_time = time.time()
     result = np.array(result)
     np.savetxt("itembase_result.csv", result.T, delimiter=",", header="rating")
@@ -56,10 +56,10 @@ def split_and_test(filename, K=5):
     train, test = train_test_split(csv, 2)
     C, W = item_similarity(train)
     result = {}
-    for u, items in test.items():
-        result[u] = {}
-        for item in items.keys():
-            result[u][item] = predict(item, u, train, W, K)
+    for item, users in test.items():
+        result[item] = {}
+        for user in users.keys():
+            result[item][user] = predict(item, user, train, W, K)
     predictions = [result[u][v] for u in result.keys() for v in result[u].keys()]
     targets = [test[u][v] for u in test.keys() for v in test[u].keys()]
     rmse = get_rmse(np.array(predictions), np.array(targets))
@@ -71,22 +71,25 @@ def train_bestK(filename):
     train, test = train_test_split(csv, 2)
     C, W = item_similarity(train)
     result = {}
-    K = 3
-    for u, items in test.items():
-        result[u] = {}
-        for item in items.keys():
-            result[u][item] = predict(item, u, train, W, K)
+    K = 390
+    for item, users in test.items():
+        result[item] = {}
+        for user in users.keys():
+            result[item][user] = predict(item, user, train, W, K)
     predictions = [result[u][v] for u in result.keys() for v in result[u].keys()]
     targets = [test[u][v] for u in test.keys() for v in test[u].keys()]
     rmse = get_rmse(np.array(predictions), np.array(targets))
-    for j in range(4, 100):
-        for u, items in test.items():
-            result[u] = {}
-            for item in items.keys():
-                result[u][item] = predict(item, u, train, W, K)
+    print("RMSE:%s" % rmse)
+    for j in range(400, 1000, 10):
+        print(j)
+        for item, users in test.items():
+            result[item] = {}
+            for user in users.keys():
+                result[item][user] = predict(item, user, train, W, j)
         predictions = [result[u][v] for u in result.keys() for v in result[u].keys()]
         targets = [test[u][v] for u in test.keys() for v in test[u].keys()]
         new_rmse = get_rmse(np.array(predictions), np.array(targets))
+        print(new_rmse)
         if new_rmse < rmse:
             K = j
             rmse = new_rmse
@@ -103,7 +106,7 @@ def train_test_split(data, seed):
     test_set = {}
     for item, movies in data.groupby('itemID'):
         movies = movies.sample(
-            frac=1, random_state=seed).reset_index(drop=True)
+            frac=1, random_state=None).reset_index(drop=True)
         train = movies[:int(0.8 * len(movies))]
         test = movies[int(0.8 * len(movies)):]
         user_list = train['userID'].tolist()
@@ -186,11 +189,11 @@ def predict(item, user, train, W, K):
 if __name__ == '__main__':
     filename = "./train.csv"
     testfilename = "./test_index.csv"
-    # get_recommendation(filename, 468, 2356)
-    split_and_test(filename,20)
-    # get_recommendations(filename, testfilename)
+    # get_recommendation(filename, 468, 2356, 10)
+    # split_and_test(filename, 20)
+    get_recommendations(filename, testfilename)
     # Ks = []
-    # for i in range(10):
+    # for i in range(1):
     #     Ks.append(train_bestK(filename))
     #     print(Ks)
     #     print(np.mean(Ks))
