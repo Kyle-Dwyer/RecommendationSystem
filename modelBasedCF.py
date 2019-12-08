@@ -210,7 +210,7 @@ def split_and_test(filename):
     start_time = time.time()
     train, test = split(filename)
     pmf = PMF()
-    pmf.set_params({"Klatentvariable": 10, "lamda": 0.1, "epoch": 500})
+    pmf.set_params({"Klatentvariable": 10, "lamda": 0.1, "epoch": 200})
     pmf.fit(train, test)
     print("RMSE：%s" % pmf.get_cmse())
     end_time = time.time()
