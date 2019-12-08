@@ -181,8 +181,4 @@ if __name__ == '__main__':
     # get_recommendation(filename, 2345, 468)
     # split_and_test(filename)
     get_recommendations(filename, testfilename)
-    # Ks = []
-    # for i in range(10):
-    #     Ks.append(train_bestK(filename))
-    #     print(Ks)
-    #     print(np.mean(Ks))
+
