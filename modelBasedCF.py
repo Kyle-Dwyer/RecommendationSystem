@@ -6,7 +6,7 @@ import numpy as np
 
 
 class PMF(object):
-    def __init__(self, Klatentvariable=10, lamda=0.1, epoch=20):
+    def __init__(self, Klatentvariable=10, lamda=0.1, epoch=200):
         self.Klatentvariable = Klatentvariable
         self.lamda = lamda
         self.epoch = epoch
@@ -24,7 +24,7 @@ class PMF(object):
         if isinstance(parameters, dict):
             self.Klatentvariable = parameters.get("Klatentvariable", 10)
             self.lamda = parameters.get("lamda", 0.1)
-            self.epoch = parameters.get("epoch", 20)
+            self.epoch = parameters.get("epoch", 200)
 
     def fit(self, train, test=None):
         # self.mean_v = np.mean(train[:, 2])
@@ -58,7 +58,49 @@ class PMF(object):
         E = np.identity(self.Klatentvariable)
         while ((not self.almost_same(self.F_user, F_user_inc) or not self.almost_same(self.G_item,
                                                                                       G_item_inc)) and enpoch < self.epoch):
-            print("enpoch now is %s" % enpoch)
+            # print("enpoch now is %s" % enpoch)
+            enpoch += 1
+            G_item_inc = self.G_item.copy()
+            F_user_inc = self.F_user.copy()
+            # Fix G_item_inc and estimate F_user_inc
+            gTg = [np.dot(np.array([self.G_item[:, m]]).T, np.array([self.G_item[:, m]])) for m in range(self.item_num)]
+            for i, Ii in enumerate(self.I):
+                nui = np.count_nonzero(Ii)  # Number of items user i has rated
+                if nui == 0: nui = 1  # Be aware of zero counts!
+                # Least squares solution
+                Ai = lamda * nui * E
+                Vi = np.zeros((self.Klatentvariable, 1))
+                score = self.R[i]
+                for index in np.nonzero(Ii)[0]:
+                    Ai += gTg[index]
+                    Vi += np.array([self.G_item[:, index] * score[index]]).T
+                self.F_user[:, i] = np.linalg.solve(Ai, Vi).T
+            # print("F %s" % enpoch)
+            # Fix F_user_inc and estimate G_item_inc
+            fTf = [np.dot(np.array([self.F_user[:, m]]), np.array([self.F_user[:, m]]).T) for m in range(self.user_num)]
+            for j, Ij in enumerate(self.I.T):
+                nmj = np.count_nonzero(Ij)  # Number of users that rated item j
+                if (nmj == 0): nmj = 1  # Be aware of zero counts!
+                # Least squares solution
+                Aj = lamda * nmj * E
+                Vj = np.zeros((self.Klatentvariable, 1))
+                score = self.R[:, j]
+                for index in np.nonzero(Ij)[0]:
+                    Aj += fTf[index]
+                    Vj += np.array([self.F_user[:, index] * score[index]]).T
+                self.G_item[:, j] = np.linalg.solve(Aj, Vj).T
+            # print("G %s" % enpoch)
+        print("ALS finished, enpoch now is %s" % enpoch)
+
+    def ALS_old(self):
+        G_item_inc = np.zeros((self.Klatentvariable, self.item_num))  # 创建电影 M x D 0矩阵
+        F_user_inc = np.zeros((self.Klatentvariable, self.user_num))  # 创建用户 N x D 0矩阵
+        enpoch = 0
+        lamda = self.lamda
+        E = np.identity(self.Klatentvariable)
+        while ((not self.almost_same(self.F_user, F_user_inc) or not self.almost_same(self.G_item,
+                                                                                      G_item_inc)) and enpoch < self.epoch):
+            # print("enpoch now is %s" % enpoch)
             enpoch += 1
             G_item_inc = self.G_item.copy()
             F_user_inc = self.F_user.copy()
@@ -68,25 +110,26 @@ class PMF(object):
                 if nui == 0: nui = 1  # Be aware of zero counts!
 
                 # Least squares solution
-                Ai = np.dot(self.G_item, np.dot(np.diag(Ii), self.G_item.T)) + lamda * nui * E
+                Ai = np.dot(self.G_item, np.dot(np.diag(Ii), self.G_item.T)) + lamda * nui / 10 * E
                 Vi = np.dot(self.G_item, np.dot(np.diag(Ii), self.R[i].T))
                 self.F_user[:, i] = np.linalg.solve(Ai, Vi)
-            print("F")
+            print("F %s" % enpoch)
             # Fix F_user_inc and estimate G_item_inc
             for j, Ij in enumerate(self.I.T):
                 nmj = np.count_nonzero(Ij)  # Number of users that rated item j
                 if (nmj == 0): nmj = 1  # Be aware of zero counts!
 
                 # Least squares solution
-                Aj = np.dot(self.F_user, np.dot(np.diag(Ij), self.F_user.T)) + lamda * nmj * E
+                Aj = np.dot(self.F_user, np.dot(np.diag(Ij), self.F_user.T)) + lamda * nmj / 10 * E
                 Vj = np.dot(self.F_user, np.dot(np.diag(Ij), self.R[:, j]))
                 self.G_item[:, j] = np.linalg.solve(Aj, Vj)
-            print("G")
+            print("G %s" % enpoch)
         print("ALS finished, enpoch now is %s" % enpoch)
 
     def almost_same(self, new, old):
         diff = np.linalg.norm(new - old)
-        threshold = (new.shape[0] * new.shape[1]) ** 0.5 * 0.1
+        # print(diff)
+        threshold = 2
         if diff <= threshold:
             print("almost same %s" % diff)
             return True
@@ -112,7 +155,7 @@ def get_recommendations(trainfilename, predictfilename):
     train = init(trainfilename)
     target = init(predictfilename, rating=False)
     pmf = PMF()
-    pmf.set_params({"Klatentvariable": 10, "lamda": 0.1})
+    pmf.set_params({"Klatentvariable": 10, "lamda": 0.5})
     pmf.fit(train)
     result = []
     for index in range(len(target)):
@@ -167,9 +210,9 @@ def split_and_test(filename):
     start_time = time.time()
     train, test = split(filename)
     pmf = PMF()
-    pmf.set_params({"Klatentvariable": 10, "lamda": 0.1})
+    pmf.set_params({"Klatentvariable": 10, "lamda": 0.1, "epoch": 500})
     pmf.fit(train, test)
-    print("CMSE：%s" % pmf.get_cmse())
+    print("RMSE：%s" % pmf.get_cmse())
     end_time = time.time()
     print("用时：%s" % (end_time - start_time))
     return
@@ -178,7 +221,6 @@ def split_and_test(filename):
 if __name__ == '__main__':
     filename = "./train.csv"
     testfilename = "./test_index.csv"
-    # get_recommendation(filename, 2345, 468)
+    get_recommendation(filename, 2345, 468)
     # split_and_test(filename)
-    get_recommendations(filename, testfilename)
-
+    # get_recommendations(filename, testfilename)
