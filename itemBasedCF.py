@@ -15,7 +15,7 @@ def get_recommendations(trainfilename, predictfilename):
     for index in range(len(user_item_list)):
         user = user_item_list[index][0]
         item = user_item_list[index][1]
-        result.append(predict(item, user, data, W, 200))
+        result.append(predict(item, user, data, W, 20))
     end_time = time.time()
     result = np.array(result)
     np.savetxt("itembase_result.csv", result.T, delimiter=",", header="rating")
@@ -174,17 +174,20 @@ def predict(item, user, train, W, K):
     already_items = train[item]
     if user in already_items.keys():
         return already_items[user]
+    A = 0
+    if len(train[item]) != 0:
+        A = sum(score for item, score in train[item].items()) / len(train[item])
     molecular = 0
     denominator = 0
     for v, wuv in sorted(W[item].items(), key=itemgetter(1), reverse=True)[:K]:
-        print(v, wuv)
+        # print(v, wuv)
         score = train[v].get(user, -1)
         if score == -1:
             continue
         else:
             molecular += W[item][v] * score
             denominator += abs(W[item][v])
-    predict_score = 0 if denominator == 0 else molecular / denominator
+    predict_score = A if denominator == 0 else molecular / denominator
     return predict_score
 
 
@@ -192,7 +195,7 @@ if __name__ == '__main__':
     filename = "./train.csv"
     testfilename = "./test_index.csv"
     # get_recommendation(filename, 468, 2345, 10)
-    get_recommendations(filename, testfilename)
+    # get_recommendations(filename, testfilename)
     split_and_test(filename, 20)
     # Ks = []
     # for i in range(1):
