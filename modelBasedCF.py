@@ -77,7 +77,7 @@ class PMF(object):
                 self.F_user[:, i] = np.linalg.solve(Ai, Vi).T
             # print("F %s" % enpoch)
             # Fix F_user_inc and estimate G_item_inc
-            fTf = [np.dot(np.array([self.F_user[:, m]]), np.array([self.F_user[:, m]]).T) for m in range(self.user_num)]
+            fTf = [np.dot(np.array([self.F_user[:, m]]).T, np.array([self.F_user[:, m]])) for m in range(self.user_num)]
             for j, Ij in enumerate(self.I.T):
                 nmj = np.count_nonzero(Ij)  # Number of users that rated item j
                 if (nmj == 0): nmj = 1  # Be aware of zero counts!
@@ -130,7 +130,7 @@ class PMF(object):
     def almost_same(self, new, old):
         diff = np.linalg.norm(new - old)
         # print(diff)
-        threshold = 2
+        threshold = 1
         if diff <= threshold:
             #print("almost same %s" % diff)
             return True
