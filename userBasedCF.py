@@ -208,14 +208,14 @@ def predict(user, item, train, W, K):
 if __name__ == '__main__':
     filename = "./train.csv"
     testfilename = "./test_index.csv"
-    # get_recommendation(filename, 2345, 468)
-    # split_and_test(filename)
-    # get_recommendations(filename, testfilename)
-    Ks = []
-    for i in range(10):
-        Ks.append(train_bestK(filename))
-        print(Ks)
-        print(np.mean(Ks))
+    # get_recommendation(filename, 722, 405,5)
+    get_recommendations(filename, testfilename)
+    split_and_test(filename)
+    # Ks = []
+    # for i in range(10):
+    #     Ks.append(train_bestK(filename))
+    #     print(Ks)
+    #     print(np.mean(Ks))
 
     # print(A["2345"] + predict("2345", "468", data, W, 5))
     # 2.9655172413793105

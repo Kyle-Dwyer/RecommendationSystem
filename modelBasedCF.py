@@ -47,7 +47,7 @@ class PMF(object):
             self.F_user = 0.1 * np.random.randn(self.Klatentvariable, self.user_num)
         if self.G_item is None:
             self.G_item = 0.1 * np.random.randn(self.Klatentvariable, self.item_num)
-        print("Well prepared for ALS")
+        #print("Well prepared for ALS")
         self.ALS()
 
     def ALS(self):
@@ -89,6 +89,7 @@ class PMF(object):
                     Aj += fTf[index]
                     Vj += np.array([self.F_user[:, index] * score[index]]).T
                 self.G_item[:, j] = np.linalg.solve(Aj, Vj).T
+
             # print("G %s" % enpoch)
         print("ALS finished, enpoch now is %s" % enpoch)
 
@@ -131,7 +132,7 @@ class PMF(object):
         # print(diff)
         threshold = 2
         if diff <= threshold:
-            print("almost same %s" % diff)
+            #print("almost same %s" % diff)
             return True
         else:
             return False
@@ -139,7 +140,7 @@ class PMF(object):
     def predict(self, user_id, item_id):
         return np.dot(self.F_user[:, int(user_id)], self.G_item[:, int(item_id)])
 
-    def get_cmse(self):
+    def get_rmse(self):
         result = []
         for index in range(len(self.test_set)):
             user = self.test_set[index][0]
@@ -171,11 +172,12 @@ def get_recommendations(trainfilename, predictfilename):
 
 def get_recommendation(filename, item, user):
     start_time = time.time()
-    train, test = split(filename)
+    train = init(filename)
     pmf = PMF()
     pmf.set_params({"Klatentvariable": 10, "lamda": 0.1})
-    pmf.fit(train, test)
+    pmf.fit(train, train)
     print(pmf.predict(item, user))
+    print("RMSE：%s" % pmf.get_rmse())
     end_time = time.time()
     print("用时：%s" % (end_time - start_time))
     return
@@ -206,13 +208,13 @@ def split(file):
     return train, test
 
 
-def split_and_test(filename):
+def split_and_test(filename, lamda=0.1):
     start_time = time.time()
     train, test = split(filename)
     pmf = PMF()
-    pmf.set_params({"Klatentvariable": 10, "lamda": 0.1, "epoch": 200})
+    pmf.set_params({"Klatentvariable": 10, "lamda": lamda, "epoch": 200})
     pmf.fit(train, test)
-    print("RMSE：%s" % pmf.get_cmse())
+    print("RMSE：%s" % pmf.get_rmse())
     end_time = time.time()
     print("用时：%s" % (end_time - start_time))
     return
@@ -221,6 +223,18 @@ def split_and_test(filename):
 if __name__ == '__main__':
     filename = "./train.csv"
     testfilename = "./test_index.csv"
-    get_recommendation(filename, 2345, 468)
-    # split_and_test(filename)
-    # get_recommendations(filename, testfilename)
+    # get_recommendation(filename, 2345, 468)
+    # train, test = split(filename)
+    # for i in range(5, 101, 5):
+    #     start_time = time.time()
+    #     pmf = PMF()
+    #     pmf.set_params({"Klatentvariable": i, "lamda": 0.16, "epoch": 200})
+    #     pmf.fit(train, test)
+    #     print("K:", i)
+    #     print("RMSE：%s" % pmf.get_rmse())
+    #     end_time = time.time()
+    #     print("")
+    # best lambda:0.16
+    # best K:10,35
+    get_recommendations(filename, testfilename)
+    split_and_test(filename,0.16)

@@ -126,6 +126,7 @@ def item_similarity(trainset):
         for i, j in users.items():
             if i not in user_item.keys():
                 user_item[i] = {item: int(j)}
+            else:
                 user_item[i][item] = int(j)
     print('Inverse table finished')
     # 初始化item关系
@@ -176,6 +177,7 @@ def predict(item, user, train, W, K):
     molecular = 0
     denominator = 0
     for v, wuv in sorted(W[item].items(), key=itemgetter(1), reverse=True)[:K]:
+        print(v, wuv)
         score = train[v].get(user, -1)
         if score == -1:
             continue
@@ -189,9 +191,9 @@ def predict(item, user, train, W, K):
 if __name__ == '__main__':
     filename = "./train.csv"
     testfilename = "./test_index.csv"
-    # get_recommendation(filename, 468, 2356, 10)
-    # split_and_test(filename, 20)
+    # get_recommendation(filename, 468, 2345, 10)
     get_recommendations(filename, testfilename)
+    split_and_test(filename, 20)
     # Ks = []
     # for i in range(1):
     #     Ks.append(train_bestK(filename))
