@@ -1,3 +1,4 @@
+import pandas as pd
 import time
 from sklearn.model_selection import train_test_split
 
@@ -5,12 +6,15 @@ import numpy as np
 
 
 class PMF(object):
-    def __init__(self, Klatentvariable=10, lamda=0.3, alpha=1, epoch=65, momentum=0.4):
+    def __init__(self, Klatentvariable=10, lamda=0.3, alpha=1, epoch=65, momentum=0.4, num_batches=100,
+                 branch_size=1000):
         self.Klatentvariable = Klatentvariable
         self.lamda = lamda
         self.alpha = alpha
         self.epoch = epoch
         self.momentum = momentum
+        self.branch_size = branch_size
+        self.num_batches = num_batches
 
         self.user_num = 0
         self.item_num = 0
@@ -186,6 +190,16 @@ def get_recommendations(trainfilename, predictfilename):
     return
 
 
+def printout(result):
+    f = open("sgd_result.csv", "w")
+    f.write("dataID,rating\n")
+    tests = pd.read_csv('test_index.csv', dtype=object, header=None, skiprows=1).values
+    count = 0
+    for test in tests:
+        f.write("%d,%.18f\n" % (count, result[count]))
+        count += 1
+
+
 def get_recommendation(filename, item, user):
     start_time = time.time()
     train = init(filename)
@@ -242,9 +256,8 @@ if __name__ == '__main__':
     filename = "./train.csv"
     testfilename = "./test_index.csv"
     # get_recommendation(filename, 2345, 468)
-    get_recommendations(filename, testfilename)
+    # get_recommendations(filename, testfilename)
     split_and_test(filename)
-
 
     # train, test = split(filename)
     # result1 = []
